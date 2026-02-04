@@ -1,6 +1,7 @@
 Param(
     [switch]
-    [bool]$doit = $false
+    [bool]$doit = $false,
+    [bool]$asTask = $false
 )
 
 function elevate() {
@@ -9,8 +10,15 @@ function elevate() {
     Start-Process powershell.exe -Verb runAs -ArgumentList ($argList)
 }
 
+$dateFormat = "yyyy-MM-dd HH:mm:ss.fff"
+
 function upgrade() {
-    Write-Host "Upgrading all packages"
+    if ($asTask) {
+        msg * "Software Update mit Chocolately gestartet"
+        Start-Transcript -Path "D:\Chocolately.Upgrade.txt"
+    }
+
+    Write-Host "$(Get-Date -Format $dateFormat) Upgrading all packages"
 
     [System.Collections.Generic.List[string]]$packages = choco list --local
 	$packages.RemoveAt(0)
@@ -19,8 +27,14 @@ function upgrade() {
         $package = $packages[$i].Split(" ")[0]
         choco upgrade -y $package
     }
-	Write-Host "Hit Enter to finish"
-	Read-Host
+    if (-not $asTask) {
+        Write-Host "Hit Enter to finish"
+        Read-Host
+	} else {
+        Write-Host "$(Get-Date -Format $dateFormat) Software Update mit Chocolately beendet"
+        Stop-Transcript
+        msg * "Software Update mit Chocolately beendet"
+	}
 }
 
 if ($doit) {
