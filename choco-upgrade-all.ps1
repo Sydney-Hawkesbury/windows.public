@@ -12,7 +12,6 @@ function elevate() {
 
 $dateFormat = "yyyy-MM-dd HH:mm:ss.fff"
 $logFile = "D:\Chocolately.Upgrade.txt"
-$runningFile = "D:\Chocolately.running"
 
 function upgrade() {
     if ($asTask) {
@@ -51,30 +50,7 @@ function upgrade() {
 
 if ($runTask) {
     schtasks /run /tn "Choco Update"
-    while (!(Test-Path $runningFile)) { Start-Sleep -Milliseconds 500 }
-
-    $lastLine = (Get-Content $logFile).Count
-
-    while (Test-Path $runningFile) {
-        $currentContent = Get-Content $logFile
-        $newLineCount = $currentContent.Count
-
-        if ($newLineCount -gt $lastLine) {
-            # Nur die neuen Zeilen ausgeben
-            $currentContent[$lastLine..($newLineCount - 1)] | Write-Host
-            $lastLine = $newLineCount
-        }
-
-        Start-Sleep -Milliseconds 500
-    }
-
-    # 5. Finale Prüfung (falls nach dem Löschen der Flag noch Zeilen kamen)
-    $finalContent = Get-Content $logFile
-    if ($finalContent.Count -gt $lastLine) {
-        $finalContent[$lastLine..($finalContent.Count - 1)] | Write-Host
-    }
-
-    Start-Sleep -Milliseconds 5000
+    Get-Content -Path $logFile -Wait -Tail 10
 } elseif ($doit) {
     upgrade
 } else {
