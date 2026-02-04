@@ -1,7 +1,6 @@
 Param(
-    [switch]
-    [bool]$doit = $false,
-    [bool]$asTask = $false
+    [switch]$doit = $false,
+    [switch]$asTask = $false
 )
 
 function elevate() {
