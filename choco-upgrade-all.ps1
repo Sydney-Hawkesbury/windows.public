@@ -53,7 +53,7 @@ if ($runTask) {
     schtasks /run /tn "Choco Update"
     while (!(Test-Path $runningFile)) { Start-Sleep -Milliseconds 500 }
 
-    $tailProcess = Get-Content $logFile -Wait -Tail 10 | ForEach-Object {
+    Get-Content $logFile -Wait -Tail 10 | ForEach-Object {
         Write-Host $_
 
         # Prüfen, ob die Flag-Datei noch da ist
