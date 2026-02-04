@@ -10,28 +10,35 @@ function elevate() {
 }
 
 $dateFormat = "yyyy-MM-dd HH:mm:ss.fff"
+$logFile = "D:\Chocolately.Upgrade.txt"
 
 function upgrade() {
     if ($asTask) {
         msg * "Software Update mit Chocolately gestartet"
-        Start-Transcript -Path "D:\Chocolately.Upgrade.txt"
     }
 
-    Write-Host "$(Get-Date -Format $dateFormat) Upgrading all packages"
+    if ($asTask) {
+        Write-Output "$(Get-Date -Format $dateFormat) Upgrading all packages" > $logFile
+    } else {
+        Write-Output "$(Get-Date -Format $dateFormat) Upgrading all packages"
+    }
 
     [System.Collections.Generic.List[string]]$packages = choco list --local
 	$packages.RemoveAt(0)
 	$packages.RemoveAt($packages.Count - 1)
     for ($i = 0; $i -lt $packages.Count; $i++) {
         $package = $packages[$i].Split(" ")[0]
-        choco upgrade -y $package
+        if ($asTask) {
+            choco upgrade -y $package >> $logFile
+        } else {
+            choco upgrade -y $package
+        }
     }
     if (-not $asTask) {
         Write-Host "Hit Enter to finish"
         Read-Host
 	} else {
-        Write-Host "$(Get-Date -Format $dateFormat) Software Update mit Chocolately beendet"
-        Stop-Transcript
+        Write-Output "$(Get-Date -Format $dateFormat) Software Update mit Chocolately beendet" >> $logFile
         msg * "Software Update mit Chocolately beendet"
 	}
 }
