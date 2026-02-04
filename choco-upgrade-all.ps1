@@ -53,16 +53,21 @@ if ($runTask) {
     schtasks /run /tn "Choco Update"
     while (!(Test-Path $runningFile)) { Start-Sleep -Milliseconds 500 }
 
-    Get-Content $logFile -Wait -Tail 10 | ForEach-Object {
-        Write-Host $_
+    $job = Start-Job -ScriptBlock {
+        param($file)
+        Get-Content $file -Wait -Tail 0
+    } -ArgumentList $logFile
 
-        # Prüfen, ob die Flag-Datei noch da ist
-        if (!(Test-Path $runningFile)) {
-            # Ein kleiner Trick: Wir müssen den Wait-Prozess stoppen.
-            # Da wir in der Pipeline hängen, erzwingen wir ein Ende.
-            break
-        }
+    while (Test-Path $flagFile) {
+        # Neue Zeilen aus dem Hintergrund-Job abholen und anzeigen
+        Receive-Job -Job $job
+        Start-Sleep -Milliseconds 500
     }
+
+    Receive-Job -Job $job # Ein letztes Mal Reste abholen
+    Stop-Job $job
+    Remove-Job $job
+
     Start-Sleep -Milliseconds 5000
 } elseif ($doit) {
     upgrade
