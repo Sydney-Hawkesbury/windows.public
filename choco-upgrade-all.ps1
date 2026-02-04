@@ -12,6 +12,7 @@ function elevate() {
 
 $dateFormat = "yyyy-MM-dd HH:mm:ss.fff"
 $logFile = "D:\Chocolately.Upgrade.txt"
+$runningFile = "D:\Chocolately.running"
 
 function upgrade() {
     if ($asTask) {
@@ -20,6 +21,7 @@ function upgrade() {
 
     if ($asTask) {
         Write-Output "$(Get-Date -Format $dateFormat) Upgrading all packages" > $logFile
+        "$(Get-Date -Format $dateFormat) Task gestartet" | Out-File -Path $runningFile -Force
     } else {
         Write-Output "$(Get-Date -Format $dateFormat) Upgrading all packages"
     }
@@ -41,12 +43,27 @@ function upgrade() {
 	} else {
         Write-Output "$(Get-Date -Format $dateFormat) Software Update mit Chocolately beendet" >> $logFile
         msg * "Software Update mit Chocolately beendet"
-	}
+        if (Test-Path $runningFile) {
+            Remove-Item $runningFile -Force
+        }
+    }
 }
 
 if ($runTask) {
     schtasks /run /tn "Choco Update"
-    Get-Content -Path $logFile -Wait -Tail 10
+    while (!(Test-Path $runningFile)) { Start-Sleep -Milliseconds 500 }
+
+    $tailProcess = Get-Content $logFile -Wait -Tail 10 | ForEach-Object {
+        Write-Host $_
+
+        # Prüfen, ob die Flag-Datei noch da ist
+        if (!(Test-Path $runningFile)) {
+            # Ein kleiner Trick: Wir müssen den Wait-Prozess stoppen.
+            # Da wir in der Pipeline hängen, erzwingen wir ein Ende.
+            break
+        }
+    }
+    Start-Sleep -Milliseconds 5000
 } elseif ($doit) {
     upgrade
 } else {
