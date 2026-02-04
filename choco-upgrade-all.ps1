@@ -53,20 +53,22 @@ if ($runTask) {
     schtasks /run /tn "Choco Update"
     while (!(Test-Path $runningFile)) { Start-Sleep -Milliseconds 500 }
 
-    $job = Start-Job -ScriptBlock {
-        param($file)
-        Get-Content $file -Wait -Tail 0
-    } -ArgumentList $logFile
-
-    while (Test-Path $flagFile) {
-        # Neue Zeilen aus dem Hintergrund-Job abholen und anzeigen
-        Receive-Job -Job $job
-        Start-Sleep -Milliseconds 500
+    try {
+        # Schleife läuft, solange die Aufgabe läuft ODER noch ungelesene Zeilen im Log sind
+        while ((Test-Path $runningFile) -or !$reader.EndOfStream) {
+            if (!$reader.EndOfStream) {
+                # Neue Zeile ausgeben
+                Write-Host $reader.ReadLine()
+            } else {
+                # Wenn am Ende der Datei angekommen, kurz warten bevor erneut geprüft wird
+                Start-Sleep -Milliseconds 100
+            }
+        }
     }
-
-    Receive-Job -Job $job # Ein letztes Mal Reste abholen
-    Stop-Job $job
-    Remove-Job $job
+    finally {
+        # Datei sauber schließen
+        $reader.Close()
+    }
 
     Start-Sleep -Milliseconds 5000
 } elseif ($doit) {
