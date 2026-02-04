@@ -53,21 +53,25 @@ if ($runTask) {
     schtasks /run /tn "Choco Update"
     while (!(Test-Path $runningFile)) { Start-Sleep -Milliseconds 500 }
 
-    try {
-        # Schleife läuft, solange die Aufgabe läuft ODER noch ungelesene Zeilen im Log sind
-        while ((Test-Path $runningFile) -or !$reader.EndOfStream) {
-            if (!$reader.EndOfStream) {
-                # Neue Zeile ausgeben
-                Write-Host $reader.ReadLine()
-            } else {
-                # Wenn am Ende der Datei angekommen, kurz warten bevor erneut geprüft wird
-                Start-Sleep -Milliseconds 100
-            }
+    $lastLine = (Get-Content $logFile).Count
+
+    while (Test-Path $runningFile) {
+        $currentContent = Get-Content $logFile
+        $newLineCount = $currentContent.Count
+
+        if ($newLineCount -gt $lastLine) {
+            # Nur die neuen Zeilen ausgeben
+            $currentContent[$lastLine..($newLineCount - 1)] | Write-Host
+            $lastLine = $newLineCount
         }
+
+        Start-Sleep -Milliseconds 500
     }
-    finally {
-        # Datei sauber schließen
-        $reader.Close()
+
+    # 5. Finale Prüfung (falls nach dem Löschen der Flag noch Zeilen kamen)
+    $finalContent = Get-Content $logFile
+    if ($finalContent.Count -gt $lastLine) {
+        $finalContent[$lastLine..($finalContent.Count - 1)] | Write-Host
     }
 
     Start-Sleep -Milliseconds 5000
