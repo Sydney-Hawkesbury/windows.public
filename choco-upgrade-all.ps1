@@ -1,6 +1,7 @@
 Param(
     [switch]$doit = $false,
-    [switch]$asTask = $false
+    [switch]$asTask = $false,
+    [switch]$runTask = $false
 )
 
 function elevate() {
@@ -43,7 +44,10 @@ function upgrade() {
 	}
 }
 
-if ($doit) {
+if ($runTask) {
+    schtasks /run /tn "Choco Update"
+    Get-Content -Path $logFile -Wait -Tail 10
+} else if ($doit) {
     upgrade
 } else {
     elevate
